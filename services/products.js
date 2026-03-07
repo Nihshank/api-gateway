@@ -3,11 +3,8 @@ const app = express()
 const PORT = 3001
 
 app.use(express.json())
-app.get('/fakeapi', (req, res) => {
-    res.send("At fake api server\n")
-})
-app.get('/bogusapi', (req, res) => {
-    res.send("At bogus api server\n")
+app.get('/products', (req, res) => {
+    res.send("On the products page\n")
 })
 
 app.listen(PORT, () => {

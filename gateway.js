@@ -2,6 +2,7 @@
 const express = require('express')
 const app = express()
 const routes = require('./routes')
+const fs = require('fs')
 const PORT = 3000
 
 // parse JSON request body to JS obj
@@ -9,6 +10,20 @@ app.use(express.json())
 
 app.get('/', (req, res) => {
     res.send("On the home page. \n")
+})
+
+app.post('/register', (req, res) => {
+    const { name, url, port, health, methods } = req.body
+
+    if (!name || !url || !port || !health || !methods){
+        return res.status(400).json({error: 'Missing required fields to register service'})
+    }
+
+    const registry = JSON.parse(fs.readFileSync('./routes/registry.json'))
+    registry.services[name] = { url, port, health, methods }
+    fs.writeFileSync('./routes/registry.json', JSON.stringify(registry, null, 2))
+
+    res.status(201).json({ message: `Service '${name}' registered successfully` })
 })
 
 app.use('/', routes)

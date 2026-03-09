@@ -10,16 +10,6 @@
           "POST"
         ]
       }
-    ],
-    "products": [
-      {
-        "url": "http://localhost:3001/products",
-        "port": 3001,
-        "health": "http://localhost:3001/health",
-        "methods": [
-          "GET"
-        ]
-      }
     ]
   }
 }

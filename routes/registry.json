@@ -1,21 +1,25 @@
 {
   "services": {
-    "orders": {
-      "url": "http://localhost:3002/orders",
-      "port": 3002,
-      "health": "http://localhost:3002/health",
-      "methods": [
-        "GET",
-        "POST"
-      ]
-    },
-    "products": {
-      "url": "http://localhost:3001/products",
-      "port": 3001,
-      "health": "http://localhost:3001/health",
-      "methods": [
-        "GET"
-      ]
-    }
+    "orders": [
+      {
+        "url": "http://localhost:3002/orders",
+        "port": 3002,
+        "health": "http://localhost:3002/health",
+        "methods": [
+          "GET",
+          "POST"
+        ]
+      }
+    ],
+    "products": [
+      {
+        "url": "http://localhost:3001/products",
+        "port": 3001,
+        "health": "http://localhost:3001/health",
+        "methods": [
+          "GET"
+        ]
+      }
+    ]
   }
 }

@@ -3,11 +3,12 @@ const express = require('express')
 const app = express()
 const routes = require('./routes')
 const fs = require('fs')
+const helmet = require('helmet')
 const PORT = 3000
 
+app.use(helmet())
 // parse JSON request body to JS obj
 app.use(express.json())
-
 app.get('/', (req, res) => {
     res.send("On the home page. \n")
 })

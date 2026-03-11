@@ -1,0 +1,9 @@
+# Disable an orders instance
+curl -X POST http://localhost:3000/enable/orders \
+  -H "Content-Type: application/json" \
+  -d '{"url": "http://localhost:3005/orders", "enabled": false}'
+
+# Enable an orders instance
+curl -X POST http://localhost:3000/enable/orders \
+  -H "Content-Type: application/json" \
+  -d '{"url": "http://localhost:3005/orders", "enabled": true}'

@@ -1,7 +1,7 @@
 const express = require('express')
 const app = express()
 const axios = require('axios')
-const PORT = 3001
+const PORT = 3003
 const service = "products"
 
 app.use(express.json())
@@ -20,7 +20,7 @@ app.listen(PORT, async () => {
         methods: ["GET"]        
     })
 
-    console.log(`${service} registerd`)
+    console.log(`${service} registered`)
 
 })
 

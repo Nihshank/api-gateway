@@ -25,20 +25,36 @@ router.all('/:path{/*splat}', async (req, res) => {
         currentIndex[path] = 0
     }
 
-    const instance = service[currentIndex[path]]
+    let instance = service[currentIndex[path]]
+    let instTried = 0
+
+    while (!instance.enabled)  {
+        currentIndex[path] = (currentIndex[path] + 1) % service.length
+        instance = service[currentIndex[path]]
+
+        instTried++
+        if (instTried === service.length){
+            return res.status(503).json({ error: `No enabled instances for service '${path}'` })
+        }
+    }
 
     const url = `${instance.url}${rest}`
 
-    const response = await axios({
-        method: req.method,
-        url,
-        data: req.body,
-        headers: {
-            'Content-Type': req.headers['content-type'],
-            'Authorization': req.headers['authorization']
-        },
-    })
-    res.send(response.data)
+    try {
+        const response = await axios({
+            method: req.method,
+            url,
+            data: req.body,
+            headers: {
+                'Content-Type': req.headers['content-type'],
+                'Authorization': req.headers['authorization']
+            },
+        })
+        res.send(response.data)
+    } 
+    catch (error) {
+        res.status(503).json({ error: `Service '${path}' is unavailable` })
+    }
 
     console.log(`Routing to instance ${currentIndex[path]} of ${path}: ${instance.url}`)
     currentIndex[path] = (currentIndex[path] + 1) % service.length

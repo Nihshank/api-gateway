@@ -29,7 +29,7 @@ app.post('/register', (req, res) => {
     const alreadyExists = registry.services[name].some(instance => instance.url === url)
     
     if (!alreadyExists) {
-        registry.services[name].push({ url, port, health, methods })
+        registry.services[name].push({ url, port, health, methods, enabled: true})
     }
 
     fs.writeFileSync('./routes/registry.json', JSON.stringify(registry, null, 2))
@@ -57,6 +57,33 @@ app.post('/unregister', (req, res) => {
 
     fs.writeFileSync('./routes/registry.json', JSON.stringify(registry, null, 2))
     res.status(200).json({ message: `Service '${name}' unregistered successfully` })
+})
+
+// toggle service on and off 
+app.post('/enable/:apiName', (req, res) => {
+    const { apiName } = req.params
+    const { url, enabled } = req.body
+
+    if (!url || enabled === undefined) {
+        return res.status(400).json({ error: 'Missing required fields' })
+    }
+
+    const registry = JSON.parse(fs.readFileSync('./routes/registry.json'))
+
+    if (!registry.services[apiName]) {
+        return res.status(404).json({ error: `Service '${apiName}' not found` })
+    }
+
+    const instance = registry.services[apiName].find(instance => instance.url === url)
+
+    if (!instance) {
+        return res.status(404).json({ error: `Instance '${url}' not found` })
+    }
+
+    instance.enabled = enabled
+
+    fs.writeFileSync('./routes/registry.json', JSON.stringify(registry, null, 2))
+    res.status(200).json({ message: `Service '${apiName}' ${enabled ? 'enabled' : 'disabled'} successfully` })
 })
 
 app.use('/', routes)

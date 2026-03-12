@@ -1,94 +1,150 @@
+const express = require("express");
+const app = express();
+const routes = require("./routes");
+const fs = require("fs");
+const helmet = require("helmet");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
-const express = require('express')
-const app = express()
-const routes = require('./routes')
-const fs = require('fs')
-const helmet = require('helmet')
-const PORT = 3000
+const PORT = process.env.GATEWAY_PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
-app.use(helmet())
-// parse JSON request body to JS obj
-app.use(express.json())
-app.get('/', (req, res) => {
-    res.send("On the home page. \n")
-})
+app.use(helmet());
+app.use(express.json());
 
-app.post('/register', (req, res) => {
-    const { name, url, port, health, methods } = req.body
+app.get("/", (req, res) => {
+  res.send("On the home page. \n");
+});
 
-    if (!name || !url || !port || !health || !methods){
-        return res.status(400).json({ error: 'Missing required fields to register service' })
-    }
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
 
-    const registry = JSON.parse(fs.readFileSync('./routes/registry.json'))
-    
-    if (!registry.services[name]) {
-        registry.services[name] = []
-    }
+  console.log("username is: ", username);
+  if (!username || !password) {
+    return res.status(400).json({ error: "Missing username or password" });
+  }
 
-    const alreadyExists = registry.services[name].some(instance => instance.url === url)
-    
-    if (!alreadyExists) {
-        registry.services[name].push({ url, port, health, methods, enabled: true})
-    }
+  if (
+    username !== process.env.ADMIN_USERNAME ||
+    password !== process.env.ADMIN_PASSWORD
+  ) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
 
-    fs.writeFileSync('./routes/registry.json', JSON.stringify(registry, null, 2))
-    res.status(201).json({ message: `Service '${name}' registered successfully` })
-})
+  const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: "1h" });
+  res.json({ token });
+});
 
-app.post('/unregister', (req, res) => {
-    const { name, url } = req.body
+const authenticate = (req, res, next) => {
+  const token = req.headers["authorization"]?.split(" ")[1];
 
-    if (!name || !url) {
-        return res.status(400).json({ error: 'Missing required fields to unregister service' })
-    }
+  if (!token) {
+    return res.status(401).json({ error: "No token provided" });
+  }
 
-    const registry = JSON.parse(fs.readFileSync('./routes/registry.json'))
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch {
+    return res.status(401).json({ error: "Invalid token" });
+  }
+};
 
-    if (!registry.services[name]) {
-        return res.status(404).json({ error: `Service '${name}' not found` })
-    }
+app.use("/", authenticate);
 
-    registry.services[name] = registry.services[name].filter(instance => instance.url !== url)
+app.post("/register", (req, res) => {
+  const { name, url, port, health, methods } = req.body;
 
-    if (registry.services[name].length === 0) {
-        delete registry.services[name]
-    }
+  if (!name || !url || !port || !health || !methods) {
+    return res
+      .status(400)
+      .json({ error: "Missing required fields to register service" });
+  }
 
-    fs.writeFileSync('./routes/registry.json', JSON.stringify(registry, null, 2))
-    res.status(200).json({ message: `Service '${name}' unregistered successfully` })
-})
+  const registry = JSON.parse(fs.readFileSync("./routes/registry.json"));
 
-// toggle service on and off 
-app.post('/enable/:apiName', (req, res) => {
-    const { apiName } = req.params
-    const { url, enabled } = req.body
+  if (!registry.services[name]) {
+    registry.services[name] = [];
+  }
 
-    if (!url || enabled === undefined) {
-        return res.status(400).json({ error: 'Missing required fields' })
-    }
+  const alreadyExists = registry.services[name].some(
+    (instance) => instance.url === url,
+  );
 
-    const registry = JSON.parse(fs.readFileSync('./routes/registry.json'))
+  if (!alreadyExists) {
+    registry.services[name].push({ url, port, health, methods, enabled: true });
+  }
 
-    if (!registry.services[apiName]) {
-        return res.status(404).json({ error: `Service '${apiName}' not found` })
-    }
+  fs.writeFileSync("./routes/registry.json", JSON.stringify(registry, null, 2));
+  res
+    .status(201)
+    .json({ message: `Service '${name}' registered successfully` });
+});
 
-    const instance = registry.services[apiName].find(instance => instance.url === url)
+app.post("/unregister", (req, res) => {
+  const { name, url } = req.body;
 
-    if (!instance) {
-        return res.status(404).json({ error: `Instance '${url}' not found` })
-    }
+  if (!name || !url) {
+    return res
+      .status(400)
+      .json({ error: "Missing required fields to unregister service" });
+  }
 
-    instance.enabled = enabled
+  const registry = JSON.parse(fs.readFileSync("./routes/registry.json"));
 
-    fs.writeFileSync('./routes/registry.json', JSON.stringify(registry, null, 2))
-    res.status(200).json({ message: `Service '${apiName}' ${enabled ? 'enabled' : 'disabled'} successfully` })
-})
+  if (!registry.services[name]) {
+    return res.status(404).json({ error: `Service '${name}' not found` });
+  }
 
-app.use('/', routes)
+  registry.services[name] = registry.services[name].filter(
+    (instance) => instance.url !== url,
+  );
+
+  if (registry.services[name].length === 0) {
+    delete registry.services[name];
+  }
+
+  fs.writeFileSync("./routes/registry.json", JSON.stringify(registry, null, 2));
+  res
+    .status(200)
+    .json({ message: `Service '${name}' unregistered successfully` });
+});
+
+app.post("/enable/:apiName", (req, res) => {
+  const { apiName } = req.params;
+  const { url, enabled } = req.body;
+
+  if (!url || enabled === undefined) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const registry = JSON.parse(fs.readFileSync("./routes/registry.json"));
+
+  if (!registry.services[apiName]) {
+    return res.status(404).json({ error: `Service '${apiName}' not found` });
+  }
+
+  const instance = registry.services[apiName].find(
+    (instance) => instance.url === url,
+  );
+
+  if (!instance) {
+    return res.status(404).json({ error: `Instance '${url}' not found` });
+  }
+
+  instance.enabled = enabled;
+
+  fs.writeFileSync("./routes/registry.json", JSON.stringify(registry, null, 2));
+  res
+    .status(200)
+    .json({
+      message: `Service '${apiName}' ${enabled ? "enabled" : "disabled"} successfully`,
+    });
+});
+
+app.use("/", routes);
 
 app.listen(PORT, () => {
-    console.log(`http://localhost:${PORT}`)
-})
-
+  console.log(`http://localhost:${PORT}`);
+});

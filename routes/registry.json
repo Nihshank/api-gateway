@@ -3,41 +3,9 @@
     "orders": [
       {
         "url": "http://localhost:3005/orders",
-        "port": 3005,
+        "port": "3005",
         "health": "http://localhost:3005/health",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "enabled": false
-      }
-    ],
-    "products": [
-      {
-        "url": "http://localhost:3003/products",
-        "port": 3001,
-        "health": "http://localhost:3003/health",
-        "methods": [
-          "GET"
-        ],
-        "enabled": true
-      },
-      {
-        "url": "http://localhost:3003/products",
-        "port": 3002,
-        "health": "http://localhost:3003/health",
-        "methods": [
-          "GET"
-        ],
-        "enabled": true
-      },
-      {
-        "url": "http://localhost:3003/products",
-        "port": 3003,
-        "health": "http://localhost:3003/health",
-        "methods": [
-          "GET"
-        ],
+        "methods": ["GET", "POST"],
         "enabled": true
       }
     ]

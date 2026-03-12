@@ -1,0 +1,11 @@
+# login to interact with gateway
+curl -X POST http://localhost:3000/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "password"}'
+
+# use token from login response to access services 
+curl -X GET http://localhost:3000/orders \
+  -H "Authorization: Bearer <your_token>"
+
+# no token - error
+curl -X GET http://localhost:3000/orders

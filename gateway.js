@@ -1,17 +1,54 @@
-
 const express = require('express')
 const app = express()
 const routes = require('./routes')
 const fs = require('fs')
 const helmet = require('helmet')
-const PORT = 3000
+const jwt = require('jsonwebtoken')
+require('dotenv').config()
+
+const PORT = process.env.GATEWAY_PORT || 3000
+const JWT_SECRET = process.env.JWT_SECRET || 'secret'
 
 app.use(helmet())
-// parse JSON request body to JS obj
 app.use(express.json())
+
 app.get('/', (req, res) => {
     res.send("On the home page. \n")
 })
+
+app.post('/login', (req, res) => {
+    const { username, password } = req.body
+
+    console.log('username is: ', username)
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Missing username or password' })
+    }
+
+    if (username !== process.env.ADMIN_USERNAME || password !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ error: 'Invalid credentials' })
+    }
+
+    const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '1h' })
+    res.json({ token })
+})
+
+const authenticate = (req, res, next) => {
+    const token = req.headers['authorization']?.split(' ')[1]
+
+    if (!token) {
+        return res.status(401).json({ error: 'No token provided' })
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET)
+        req.user = decoded
+        next()
+    } catch (error) {
+        return res.status(401).json({ error: 'Invalid token' })
+    }
+}
+
+app.use('/', authenticate)
 
 app.post('/register', (req, res) => {
     const { name, url, port, health, methods } = req.body
@@ -59,7 +96,6 @@ app.post('/unregister', (req, res) => {
     res.status(200).json({ message: `Service '${name}' unregistered successfully` })
 })
 
-// toggle service on and off 
 app.post('/enable/:apiName', (req, res) => {
     const { apiName } = req.params
     const { url, enabled } = req.body
@@ -91,4 +127,3 @@ app.use('/', routes)
 app.listen(PORT, () => {
     console.log(`http://localhost:${PORT}`)
 })
-

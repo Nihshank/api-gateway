@@ -5,10 +5,7 @@
         "url": "http://localhost:3005/orders",
         "port": "3005",
         "health": "http://localhost:3005/health",
-        "methods": [
-          "GET",
-          "POST"
-        ],
+        "methods": ["GET", "POST"],
         "enabled": true
       }
     ]
